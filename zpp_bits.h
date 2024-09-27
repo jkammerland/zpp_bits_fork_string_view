@@ -2591,7 +2591,12 @@ private:
             }
             m_position += sizeof(item);
             return {};
-        } else if constexpr (requires {
+        } 
+        else if constexpr (std::same_as<type, bytes<const char>>) {
+            // For deserialization, create a view of the existing buffer
+            return {};
+        }
+        else if constexpr (requires {
                                  requires std::same_as<
                                      bytes<typename type::value_type>,
                                      type>;
@@ -2606,7 +2611,6 @@ private:
             if (!item_size_in_bytes) [[unlikely]] {
                 return {};
             }
-
             if (item_size_in_bytes > size - m_position) [[unlikely]] {
                 return std::errc::result_out_of_range;
             }
@@ -2713,7 +2717,15 @@ private:
                     }
                 }
                 container.resize(size);
-            } else if constexpr (is_const &&
+            } 
+            else if constexpr (is_const && (std::same_as<std::string_view, type>)) {
+                if (size > m_data.size() - m_position) [[unlikely]] {
+                    return std::errc::result_out_of_range;
+                }
+                container = {reinterpret_cast<const char *>(m_data.data() + m_position), size};
+                m_position += size;
+            }
+            else if constexpr (is_const &&
                                  (std::same_as<std::byte, value_type> ||
                                   std::same_as<char, value_type> ||
                                   std::same_as<unsigned char,
