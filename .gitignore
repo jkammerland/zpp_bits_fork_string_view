@@ -1,0 +1,4 @@
+build/
+.cache/
+test/compile_commands.json
+test/obj/
